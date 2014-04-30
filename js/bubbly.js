@@ -1,117 +1,137 @@
-(function () {
-    "use strict";
-
-    WinJS.UI.Pages.define("/pages/bubbly.html", {
-        // This function is called whenever a user navigates to this page. It
-        // populates the page elements with the app's data.
-        ready: function (element, options) {
-            // TODO: Initialize the page here.
-            WinJS.Utilities.query("#myCanvas").listen("click", selectBubbles, false);
-            WinJS.Utilities.query("#newGameButton").listen("click", newGame, false);
-            // start new game
-            newGame();
-        },
-
-        unload: function () {
-            // TODO: Respond to navigations away from this page.
-        },
-
-        updateLayout: function (element) {
-            /// <param name="element" domElement="true" />
-
-            // TODO: Respond to changes in layout.
-        }
-    });
-
-
+function Bubbly() {
+    var _this = this;
     /*global constants*/
     var COLUMNS = 15; //number of columns of the board
     var ROWS = 8; // number of rows of the board
     var RADIUS = 25; //how big the bubbles are 
-    var CANVASWIDTH = COLUMNS * 2 * RADIUS; //width of the canvas
-    var CANVASHEIGHT = ROWS * 2 * RADIUS; //height of the canvas
+    var DIAMETER = RADIUS * 2;
+    var CANVASWIDTH = COLUMNS * DIAMETER; //width of the canvas
+    var CANVASHEIGHT = ROWS * DIAMETER; //height of the canvas
 
     /*global variables*/
-    var timerCount; //counter variables
-    var timeOut;
-    var timerOn;
-
     var board; //main board of the game 
-    var selectedBubbles; //the currently selected group of bubbles
-    var playing; //state of the game 
+    var playing = false; //state of the game 
+    var selectedBubbles = new Array();
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    canvas.width = CANVASWIDTH;
+    canvas.height = CANVASHEIGHT;
 
-    /* 
-      input: n/a
-      output: stirng of a random color 
-      description: returns a random color among 5 (red, blue, green, gold, purple
-    */
-    function randomColor() {
-        var rand = Math.floor(Math.random() * 5);
-        if (rand == 0)
-            return "red";
-        else if (rand == 1)
-            return "blue";
-        else if (rand == 2)
-            return "green";
-        else if (rand == 3)
-            return "gold";
-        else if (rand == 4)
-            return "purple";
-    }
+    this.score = 0;
 
-    /*
-      input: x, y
-      output: n/a
-      description: draws a circle of color defined by the index x, y in board[][]
-    */
-    function drawBubble(x, y) {
-        var color = board[x][y];
-        if (color == "white")
-            return;
-
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
-        ctx.shadowColor = "black";
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x * 2 * RADIUS + RADIUS, y * 2 * RADIUS + RADIUS, RADIUS, 0 * Math.PI, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
-    }
-
-    /*
-      input: n/a
-      output: n/a
-      description: starts a new game by defining canvas width and height. end the 
-                   previous game first and initialize the board. Draw the board and
-                   resets the timer, score, and total score
-    */
-    function newGame() {
-        var canvas = document.getElementById("myCanvas");
-        canvas.width = CANVASWIDTH;
-        canvas.height = CANVASHEIGHT;
-        endGame();
-        initBoard();
+    // newGame(boardArray)
+    // Starts a new game by defining canvas width and height. End the previous game first and initialize the board.
+    this.newGame = function (boardArray) {
+        _this.endGame();
+        initBoard(boardArray);
         playing = true;
+        selectedBubbles = new Array();
+        _this.score = 0;
         drawBoard();
-        var score = document.getElementById("score");
-        var totalScore = document.getElementById("totalScore");
-        score.innerHTML = "0";
-        totalScore.innerHTML = "0";
-        timerCount = 0;
-        document.getElementById("timer").innerHTML = "0";
-    }
+    };
 
     /* 
       input: n/a
-      output: the game state global variable 'playing'
-      description: scans the board to check if there's at least two bubbles
-               that have the same color and are adjacent to each other
+      output: n/a
+      description: take user mouse input and locate where in the canvas the player
+               has clicked and figure out if the neighbouring colors are the same
+               by calling findNieghbour(...); If the bubbles have already been 
+               selected previously, remove the bubbles and update the total score
     */
-    function checkGameState() {
-        var gameStatus = document.getElementById("gameStatus");
+    this.selectBubbles = function (event) {
+        if (board == null || !playing)
+            return;
+        // refreshes the board
+        drawBoard();
 
+        var cord = canvasMouseCordinates(event);
+        var x = cord.x;
+        var y = cord.y;
+
+        // don't try to analyzie white
+        if (board[x][y] == "white") {
+            return;
+        }
+
+        if (selectedBubbles.length < 2) {
+            selectedBubbles = new Array();
+            findNeighbours(selectedBubbles, x, y); //recursive call
+
+            if (selectedBubbles.length < 2) {
+                selectedBubbles = new Array();
+                drawBoard();
+            }
+        }
+        else if (included(selectedBubbles, x, y)) {
+            for (var i = 0; i < selectedBubbles.length; i++) {
+                x = selectedBubbles[i][0];
+                y = selectedBubbles[i][1];
+                board[x][y] = "white";
+            }
+            _this.score += Math.pow(selectedBubbles.length, 2);
+            selectedBubbles = new Array();
+            reorganizeBoard();
+            checkGameState();
+        }
+        else {
+            selectedBubbles = new Array();
+            findNeighbours(selectedBubbles, x, y);
+        }
+    };
+
+    // Ends the game
+    this.endGame = function () {
+        // resets game variables
+        playing = false;
+
+        // draw end game info
+        ctx.shadowColor = "white";
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = "black";
+        ctx.font = "30px Helvetica";
+        var text = "GAME OVER";
+        var textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, CANVASWIDTH / 2 - textWidth / 2, CANVASHEIGHT / 2);
+    }
+
+    // Populate the board with random colors. Overwrites any existing data.
+    function initBoard(boardArray) {
+        board = new Array(COLUMNS);
+        for (var x = 0; x < COLUMNS; x++)
+            board[x] = new Array(ROWS);
+        if (Boolean(boardArray)) {
+            for (var x = 0; x < COLUMNS; x++)
+                for (var y = 0; y < ROWS; y++)
+                    board[x][y] = boardArray[y + x * ROWS];
+        }
+    }
+
+    // Draws the board defined by board[][]
+    function drawBoard() {
+        // clear board
+        ctx.clearRect(0, 0, CANVASWIDTH, CANVASHEIGHT);
+
+        // draw the bubbles
+        for (var x = 0; x < COLUMNS; x++) {
+            for (var y = 0; y < ROWS; y++) {
+                var color = board[x][y];
+                if (color == "white")
+                    continue;
+
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x * DIAMETER + RADIUS, y * DIAMETER + RADIUS, RADIUS, 0 * Math.PI, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+    }
+
+    // Scans the board to check if there's at least two bubbles 
+    // that have the same color and are adjacent to each other
+    function checkGameState() {
         for (var x = 0; x < COLUMNS; x++) {
             for (var y = 0; y < ROWS; y++) {
                 var me = board[x][y];
@@ -131,99 +151,15 @@
                     return (playing = true);
             }
         }
-        endGame();
+        _this.endGame();
         return (playing = false);
     }
 
-    /*
-      input: n/a
-      output: n/a 
-      description: if the game is determined to have ended by checkGameState()
-               this function will be called to stop the timer, and make
-               make the player name input and submit button visible
-    */
-    function endGame() {
-        drawEndGameInfo();
-        clearTimeout(timeOut);
-        timerOn = false;
-    }
-
-    /* 
-      input: n/a 
-      output: n/a 
-      description: if the game is determined to have ended by checkGameState()
-               this function will be called to draw on the canvas to let
-               the user know the game has ended and prompt them to enter 
-               their name below the board with a message 
-    */
-    function drawEndGameInfo() {
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
-        ctx.shadowColor = "white";
-        ctx.shadowBlur = 50;
-        ctx.fillStyle = "black";
-        ctx.font = "100px Arial";
-        var text = "GAME OVER";
-        var textWidth = ctx.measureText(text).width;
-        ctx.fillText(text, CANVASWIDTH / 2 - textWidth / 2, CANVASHEIGHT / 2);
-        ctx.font = "30px Arial";
-        text = "please input player info";
-        textWidth = ctx.measureText(text).width;
-        ctx.fillText(text, CANVASWIDTH / 2 - textWidth / 2, CANVASHEIGHT * 2 / 3);
-        text = "below and submit score";
-        textWidth = ctx.measureText(text).width;
-        ctx.fillText(text, CANVASWIDTH / 2 - textWidth / 2, CANVASHEIGHT * 3 / 4);
-    }
-
-    /*
-      input: n/a
-      output: n/a 
-      description: populate the board with random colors. Overwrites any
-               existing data.
-    */
-    function initBoard() {
-        selectedBubbles = new Array();
-        board = new Array(COLUMNS);
-        for (var x = 0; x < COLUMNS; x++)
-            board[x] = new Array(ROWS);
-        for (var x = 0; x < COLUMNS; x++)
-            for (var y = 0; y < ROWS; y++)
-                board[x][y] = randomColor();
-    }
-
-    /* 
-      input: n/a
-      output: n/a
-      description: clear the canvas and redraw only the bubble. This gives 
-               the player visual clue that the previous selection 
-                   has been cleared or bubbles have been removed
-    */
-    function clearBoard() {
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, CANVASWIDTH, CANVASHEIGHT);
-    }
-
-    /*
-      input: n/a
-      output: n/a
-      description: called moveColumLeft(),  gravity(), and drawBoard to
-               reorganize the board when a column has been cleared
-               or when bubbles need to move downward
-    */
+    // Called moveColumLeft(),  gravity(), and drawBoard to
+    // reorganize the board when a column has been cleared
+    // or when bubbles need to move downward
     function reorganizeBoard() {
-        moveColumLeft();
-        gravity();
-        drawBoard();
-    }
-
-    /*
-      input: n/a
-      output: n/a
-      description: detects if any column has been cleared and move all 
-               column to the right of that left to fill the column
-    */
-    function moveColumLeft() {
+        // move colum left
         var moveLeft = true;
         for (var x = 13; x >= 0; x--) {
             for (var y = 7; y >= 0; y--) {
@@ -243,14 +179,8 @@
             }
             moveLeft = true;
         }
-    }
 
-    /*
-      input: n/a
-      output: n/a
-      description: drops button down ward 
-    */
-    function gravity() {
+        // drop bubbles downward
         //gravity effect
         for (var x = 0; x < COLUMNS; x++) {
             for (var y = 7; y >= 0; y--) {
@@ -268,78 +198,8 @@
                 }
             }
         }
-    }
 
-    /*
-      input: n/a
-      output: n/a
-      description: draws the board defined by board[][]
-    */
-    function drawBoard() {
-        clearBoard();
-        for (var x = 0; x < COLUMNS; x++) {
-            for (var y = 0; y < ROWS; y++) {
-                drawBubble(x, y);
-            }
-        }
-    }
-
-    /* 
-      input: n/a
-      output: n/a
-      description: take user mouse input and locate where in the canvas the player
-               has clicked and figure out if the neighbouring colors are the same
-               by calling findNieghbour(...); If the bubbles have already been 
-               selected previously, remove the bubbles and update the total score
-    */
-    function selectBubbles(event) {
-        if (board == null || !playing)
-            return;
-
-        if (!timerOn) {
-            timerOn = true;
-            startTimer();
-        }
         drawBoard();
-        var cord = canvasMouseCordinates(event);
-        var x = cord.x; //parseInt(event.clientX/(2*RADIUS));
-        var y = cord.y; //parseInt(event.clientY/(2*RADIUS));
-        var score = document.getElementById("score");
-
-        //don't try to analyzie white
-        if (board[x][y] == "white") {
-            score.innerHTML = "0";
-            selectedBubbles = null;
-            return;
-        }
-
-        var newBubbles = new Array();
-        findNeighbours(newBubbles, x, y);
-
-        if (newBubbles.length < 2) {
-            score.innerHTML = "0";
-            selectedBubbles = null;
-            drawBoard();
-            return;
-        }
-        //if double click, remove bubles 
-        if (included(selectedBubbles, newBubbles[0][0], newBubbles[0][1])) {
-            for (var i = 0; i < newBubbles.length; i++) {
-                var x = newBubbles[i][0];
-                var y = newBubbles[i][1];
-                board[x][y] = "white";
-            }
-            var totalScore = document.getElementById("totalScore");
-            totalScore.innerHTML = parseInt(totalScore.innerHTML) + newBubbles.length * newBubbles.length;
-            selectedBubbles = null;
-            reorganizeBoard();
-            checkGameState();
-        }
-        else {
-            selectedBubbles = newBubbles;
-            score.innerHTML = newBubbles.length * newBubbles.length;
-        }
-
     }
 
     /*
@@ -354,78 +214,64 @@
                Also draws the borders at the same time.
     */
     function findNeighbours(array, x, y) {
-        var canvas = document.getElementById("myCanvas");
-        var ctx = canvas.getContext("2d");
-        var neighbour = new Array(2);
         var color = board[x][y];
 
         //include self 
-        neighbour = [x, y];
-        array.push(neighbour);
+        array.push([x, y]);
+
         //up neighbour
         if (!included(array, x, y - 1)) {
-            if ((y - 1 >= 0) && (neighbour = sameColor(color, x, y - 1)) != null)
+            if ((y - 1 >= 0) && color == board[x][y - 1])
                 findNeighbours(array, x, y - 1);
             else {
-                ctx.beginPath();
-                ctx.moveTo(x * 2 * RADIUS, y * 2 * RADIUS);
-                ctx.lineTo(x * 2 * RADIUS + 2 * RADIUS, y * 2 * RADIUS);
-                ctx.stroke();
-                ctx.closePath();
+                drawBorder(x * DIAMETER,
+                           y * DIAMETER,
+                           x * DIAMETER + DIAMETER,
+                           y * DIAMETER);
             }
         }
         //right
         if (!included(array, x + 1, y)) {
-            if ((x + 1 < COLUMNS) && (neighbour = sameColor(color, x + 1, y)) != null)
+            if ((x + 1 < COLUMNS) && color == board[x + 1][y])
                 findNeighbours(array, x + 1, y);
             else {
-                ctx.beginPath();
-                ctx.moveTo(x * 2 * RADIUS + 2 * RADIUS, y * 2 * RADIUS);
-                ctx.lineTo(x * 2 * RADIUS + 2 * RADIUS, y * 2 * RADIUS + 2 * RADIUS);
-                ctx.stroke();
-                ctx.closePath();
+                drawBorder(x * DIAMETER + DIAMETER,
+                           y * DIAMETER,
+                           x * DIAMETER + DIAMETER,
+                           y * DIAMETER + DIAMETER);
             }
         }
         //down
         if (!included(array, x, y + 1)) {
-            if ((y + 1 < ROWS) && (neighbour = sameColor(color, x, y + 1)) != null)
+            if ((y + 1 < ROWS) && color == board[x][y + 1])
                 findNeighbours(array, x, y + 1);
             else {
-                ctx.beginPath();
-                ctx.moveTo(x * 2 * RADIUS, y * 2 * RADIUS + 2 * RADIUS);
-                ctx.lineTo(x * 2 * RADIUS + 2 * RADIUS, y * 2 * RADIUS + 2 * RADIUS);
-                ctx.stroke();
-                ctx.closePath();
+                drawBorder(x * DIAMETER,
+                           y * DIAMETER + DIAMETER,
+                           x * DIAMETER + DIAMETER,
+                           y * DIAMETER + DIAMETER);
             }
         }
         //left
         if (!included(array, x - 1, y)) {
-            if ((x - 1 >= 0) &&
-            (neighbour = sameColor(color, x - 1, y, x, y)) != null)
+            if ((x - 1 >= 0) && color == board[x - 1][y])
                 findNeighbours(array, x - 1, y);
             else {
-                ctx.beginPath();
-                ctx.moveTo(x * 2 * RADIUS, y * 2 * RADIUS);
-                ctx.lineTo(x * 2 * RADIUS, y * 2 * RADIUS + 2 * RADIUS);
-                ctx.stroke();
-                ctx.closePath();
+                drawBorder(x * DIAMETER,
+                           y * DIAMETER,
+                           x * DIAMETER,
+                           y * DIAMETER + DIAMETER);
             }
         }
     }
-    /*
-      input: current color, neighbour cordinates (x,y)
-      output: returns neighbour if same color, else null
-      description: helper function to determine if the current bubble has
-               the same color as its neighbourhg (x,y)
-    */
-    function sameColor(color, x, y) {
-        var neighbour = new Array(2);
-        if (color == board[x][y]) {
-            neighbour = [x, y];
-            return neighbour;
-        }
-        else
-            return null;
+
+    function drawBorder(startX, startY, endX, endY) {
+        ctx.strokeStyle = "white";
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        ctx.closePath();
     }
 
     /*
@@ -448,19 +294,6 @@
     }
 
     /*
-      input: n/a
-      output: n/a
-      description: starts the timer and increment counter
-    */
-    function startTimer() {
-        document.getElementById("timer").innerHTML = timerCount;
-        timerCount++;
-        timeOut = setTimeout(function () {
-            startTimer();
-        }, 1000);
-    }
-
-    /*
       input: event
       output: cordinate (x,y)
       description: takes in the (click) event and determine where on the canvas
@@ -469,7 +302,6 @@
     function canvasMouseCordinates(event) {
         var x;
         var y;
-        var canvas = document.getElementById("myCanvas");
         if (event.pageX || event.pageY) {
             x = event.pageX;
             y = event.pageY;
@@ -482,10 +314,9 @@
         x -= canvas.offsetLeft;
         y -= canvas.offsetTop;
 
-        x = parseInt(x / (2 * RADIUS));
-        y = parseInt(y / (2 * RADIUS));
+        x = parseInt(x / (DIAMETER));
+        y = parseInt(y / (DIAMETER));
 
         return { x: x, y: y };
     }
-
-})();
+}

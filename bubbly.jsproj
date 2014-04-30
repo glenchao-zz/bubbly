@@ -64,11 +64,12 @@
     <Content Include="images\storelogo.scale-100.png" />
     <Content Include="js\bubbly.js" />
     <Content Include="js\default.js" />
+    <Content Include="js\game.js" />
     <Content Include="js\home.js" />
     <Content Include="js\navigator.js" />
+    <Content Include="pages\game.html" />
     <Content Include="pages\home.html" />
     <Content Include="default.html" />
-    <Content Include="pages\bubbly.html" />
     <Content Include="pages\page1.html" />
     <None Include="bubbly_TemporaryKey.pfx" />
   </ItemGroup>
