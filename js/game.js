@@ -57,7 +57,10 @@
                 "Content-type": "application/json",
                 "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT"
             },
-            data: JSON.stringify({ score: bubbly.score })
+            data: JSON.stringify({
+                score: bubbly.score,
+                moves: bubbly.moves
+            })
         }).done(
                 function completed(result) {
                     if (result.status === 200) {

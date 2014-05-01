@@ -1,6 +1,7 @@
 function Bubbly() {
     var _this = this;
-    /*global constants*/
+
+    // Constant variables
     var COLUMNS = 15; //number of columns of the board
     var ROWS = 8; // number of rows of the board
     var RADIUS = 25; //how big the bubbles are 
@@ -8,36 +9,35 @@ function Bubbly() {
     var CANVASWIDTH = COLUMNS * DIAMETER; //width of the canvas
     var CANVASHEIGHT = ROWS * DIAMETER; //height of the canvas
 
-    /*global variables*/
+    // Public variables
+    this.moves; // array
+    this.score = 0;
+
+    // Private variables
     var board; //main board of the game 
-    var playing = false; //state of the game 
-    var selectedBubbles = new Array();
+    var playing; //boolean
+    var selectedBubbles// array
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d");
     canvas.width = CANVASWIDTH;
     canvas.height = CANVASHEIGHT;
 
-    this.score = 0;
-
-    // newGame(boardArray)
     // Starts a new game by defining canvas width and height. End the previous game first and initialize the board.
     this.newGame = function (boardArray) {
-        _this.endGame();
-        initBoard(boardArray);
+        // reset game variables
         playing = true;
         selectedBubbles = new Array();
+        _this.moves = new Array();
         _this.score = 0;
+
+        initBoard(boardArray);
         drawBoard();
     };
 
-    /* 
-      input: n/a
-      output: n/a
-      description: take user mouse input and locate where in the canvas the player
-               has clicked and figure out if the neighbouring colors are the same
-               by calling findNieghbour(...); If the bubbles have already been 
-               selected previously, remove the bubbles and update the total score
-    */
+    //Take user mouse input and locate where in the canvas the player
+    //has clicked and figure out if the neighbouring colors are the same
+    //by calling findNieghbour(...); If the bubbles have already been 
+    //selected previously, remove the bubbles and update the total score
     this.selectBubbles = function (event) {
         if (board == null || !playing)
             return;
@@ -54,6 +54,7 @@ function Bubbly() {
         }
 
         if (selectedBubbles.length < 2) {
+            // First selection
             selectedBubbles = new Array();
             findNeighbours(selectedBubbles, x, y); //recursive call
 
@@ -63,17 +64,20 @@ function Bubbly() {
             }
         }
         else if (included(selectedBubbles, x, y)) {
+            // Clears the bubbles
             for (var i = 0; i < selectedBubbles.length; i++) {
-                x = selectedBubbles[i][0];
-                y = selectedBubbles[i][1];
+                x = selectedBubbles[i].x;
+                y = selectedBubbles[i].y;
                 board[x][y] = "white";
             }
             _this.score += Math.pow(selectedBubbles.length, 2);
+            _this.moves.push(selectedBubbles);
             selectedBubbles = new Array();
             reorganizeBoard();
             checkGameState();
         }
         else {
+            // Selected another set of bubbles
             selectedBubbles = new Array();
             findNeighbours(selectedBubbles, x, y);
         }
@@ -81,7 +85,6 @@ function Bubbly() {
 
     // Ends the game
     this.endGame = function () {
-        // resets game variables
         playing = false;
 
         // draw end game info
@@ -217,7 +220,7 @@ function Bubbly() {
         var color = board[x][y];
 
         //include self 
-        array.push([x, y]);
+        array.push({ x: x, y: y });
 
         //up neighbour
         if (!included(array, x, y - 1)) {
@@ -286,7 +289,7 @@ function Bubbly() {
             return;
 
         for (var i = 0; i < array.length; i++) {
-            if (array[i][0] == x && array[i][1] == y)
+            if (array[i].x == x && array[i].y == y)
                 return true;
         }
 
