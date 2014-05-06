@@ -49,13 +49,18 @@
     <RequiredPlatformVersion>8.1</RequiredPlatformVersion>
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <PackageCertificateKeyFile>bubbly_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>bubbly_StoreKey.pfx</PackageCertificateKeyFile>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxBundlePlatforms>neutral</AppxBundlePlatforms>
+    <PackageCertificateThumbprint>C4AFCDD5ED42B7EEDB4E5C29DF5D5D832204DF73</PackageCertificateThumbprint>
   </PropertyGroup>
   <ItemGroup>
     <AppxManifest Include="package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="bubbly_StoreKey.pfx" />
     <Content Include="css\default.css" />
+    <Content Include="css\game.css" />
     <Content Include="css\home.css" />
     <Content Include="css\bubbly.css" />
     <Content Include="images\logo.scale-100.png" />
@@ -67,6 +72,9 @@
     <Content Include="js\game.js" />
     <Content Include="js\home.js" />
     <Content Include="js\navigator.js" />
+    <None Include="Package.StoreAssociation.xml">
+      <SubType>Designer</SubType>
+    </None>
     <Content Include="pages\game.html" />
     <Content Include="pages\home.html" />
     <Content Include="default.html" />

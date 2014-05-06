@@ -12,17 +12,23 @@
     <!-- custom includes -->
     <link href="/css/default.css" rel="stylesheet" />
     <link href="/css/bubbly.css" rel="stylesheet" />
+    <link href="/css/game.css" rel="stylesheet" />
     <script src="/js/bubbly.js"></script>
     <script src="/js/game.js"></script>
 </head>
 <body>
-    <div class="container">
-        <canvas id="myCanvas" height="400" width="750"></canvas>
-        <div id="gameStatus">
-            <button id="refreshBtn">Refresh</button>
-            <p id="gameData" style="width:700px; height:500px; word-break:break-all; overflow-y:scroll;"></p>
-        </div>
-        <br />
+    <div class="fragment">
+        <section aria-label="Main content" role="main">
+            <div id="container">
+                <canvas id="myCanvas"></canvas>
+                <br />
+                <div id="gameStatus">
+                    <button id="refreshBtn">Refresh</button>
+                    <p id="gameData" style="width:700px; height:500px; word-break:break-all; overflow-y:scroll;"></p>
+                </div>
+                <br />
+            </div>
+        </section>
     </div>
 </body>
 </html>
