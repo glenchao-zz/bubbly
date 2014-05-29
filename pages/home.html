@@ -24,8 +24,12 @@
         </header>
         <section aria-label="Main content" role="main">
             <div id="container">
-                <div><a href="/pages/game.html">Start New Game</a></div>
-                <div><button id="facebookLoginBtn">Facebook Login</button></div>
+                <form id="usernameForm" action="javascript:return false">
+                    <input class="input" type="text" maxlength="20" placeholder="Choose a name to start..." />
+                    <div class="warning"></div>
+                    <input class="submit" type="submit" value="Start" disabled="disabled" />
+                </form>
+                <!--<div><button id="facebookLoginBtn">Facebook Login</button></div>-->
             </div>
         </section>
     </div>

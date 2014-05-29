@@ -8,14 +8,67 @@
             // TODO: Initialize the page here.
             WinJS.Utilities.query("a").listen("click", linkClickEventHandler, false);
             WinJS.Utilities.query("#facebookLoginBtn").listen("click", logIntoFacebook, false);
+            WinJS.Utilities.query("#usernameForm .input").listen("keyup", validateUsername, false);
+            WinJS.Utilities.query("#usernameForm .submit").listen("click", startGame, false);
         }
     });
 
+    var validationTimer;
+    var bValidated = false;
+    function validateUsername(evt) {
+        evt.preventDefault();
+        bValidated = false;
+        if (validationTimer) {
+            clearTimeout(validationTimer);
+            validationTimer = setTimeout(validate, 1000, evt);
+        }
+        else
+            validationTimer = setTimeout(validate, 1000, evt);
+        
+        function validate(evt) {
+            var warningDiv = document.querySelector("#usernameForm .warning");
+            var submitBtn = document.querySelector("#usernameForm .submit");
+            var username = evt.srcElement.value;
+            var bValidUsername = !(/\W/g).test(username) && username.length > 0 && username.length < 21;
+            if (bValidUsername) {
+                // show start game button
+                bValidated = true;
+                warningDiv.textContent = "";
+                submitBtn.disabled = false;
+
+            }
+            else {
+                // show warning 
+                warningDiv.textContent = "Only letters, numbers, and underscore are allowed...";
+                submitBtn.disabled = true;
+            }
+        }
+    }
+
+    function startGame(evt) {
+        if (bValidated) {
+            var applicationData = Windows.Storage.ApplicationData.current;
+            var localSettings = applicationData.localSettings;
+            var username = document.querySelector("#usernameForm .input").value;
+            var doubleCheck = !(/\W/g).test(username) && username.length > 0 && username.length < 21;
+            if (doubleCheck) {
+                localSettings["username"] = username;
+                WinJS.Navigation.navigate("/pages/game.html", { username: username });
+            }
+            else {
+                var warningDiv = document.querySelector("#usernameForm .warning");
+                warningDiv.textContent = "Something went wrong... please try again";
+            }
+        }
+        evt.preventDefault();
+        return false;
+    }
+
     var facebookUrl = "https://graph.facebook.com";
 
-    function linkClickEventHandler(eventInfo) {
-        eventInfo.preventDefault();
-        var link = eventInfo.target;
+    function linkClickEventHandler(evt) {
+        evt.preventDefault();
+        var link = evt.target;
         WinJS.Navigation.navigate(link.href);
     }
 

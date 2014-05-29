@@ -7,9 +7,9 @@
         ready: function (element, options) {
             var bubbly = new Bubbly();
             WinJS.Utilities.query("#myCanvas").listen("click", bubbly.selectBubbles, false);
-            WinJS.Utilities.query("#refreshBtn").listen("click", function () { getGameData(bubbly, 0); }, false);
+            WinJS.Utilities.query("#refreshBtn").listen("click", function () { getGameData(bubbly, 0, options.username); }, false);
 
-            getGameData(bubbly);
+            getGameData(bubbly, 0, options.username);
         },
 
         unload: function () {
@@ -23,22 +23,24 @@
         }
     });
 
-    function getGameData(bubbly, time) {
+    function getGameData(bubbly, time, username) {
         if (time == null)
             time = 0;
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
-                url: "http://localhost:8081/bubbly/current",
+                url: "http://localhost:8081/bubbly/join/" + username,
                 responseType: "json",
                 headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
             }).done(
                 function completed(result) {
                     if (result.status === 200) {
                         var data = JSON.parse(result.response);
-                        setGameClock(data.remainingTime, bubbly);
-                        bubbly.newGame(data.board);
-                        writeDebug(data);
+                        var gameState = data.gameState;
+                        var user = data.user;
+                        setGameClock(gameState.remainingTime, bubbly);
+                        bubbly.newGame(gameState.board);
+                        writeDebug(gameState);
                     }
                 },
                 function error(result) {

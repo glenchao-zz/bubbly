@@ -43,3 +43,7 @@
         .fragment section[role=main] #container {
             -ms-grid-column: 2;
         }
+
+.warning {
+    color: red;
+}
