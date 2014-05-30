@@ -47,13 +47,13 @@
 
     function startGame(evt) {
         if (bValidated) {
-            var applicationData = Windows.Storage.ApplicationData.current;
-            var localSettings = applicationData.localSettings;
+            var localSettings = Windows.Storage.ApplicationData.current.localSettings;
             var username = document.querySelector("#usernameForm .input").value;
             var doubleCheck = !(/\W/g).test(username) && username.length > 0 && username.length < 21;
             if (doubleCheck) {
                 localSettings["username"] = username;
-                WinJS.Navigation.navigate("/pages/game.html", { username: username });
+                //var hardwareToken = Windows.System.Profile.HardwareIdentification.getPackageSpecificToken(null);
+                WinJS.Navigation.navigate("/pages/game.html", { username: username, token: hardwareToken });
             }
             else {
                 var warningDiv = document.querySelector("#usernameForm .warning");

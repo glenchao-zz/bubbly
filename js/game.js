@@ -7,9 +7,9 @@
         ready: function (element, options) {
             var bubbly = new Bubbly();
             WinJS.Utilities.query("#myCanvas").listen("click", bubbly.selectBubbles, false);
-            WinJS.Utilities.query("#refreshBtn").listen("click", function () { getGameData(bubbly, 0, options.username); }, false);
+            WinJS.Utilities.query("#refreshBtn").listen("click", function () { getGameData(bubbly, 0, options); }, false);
 
-            getGameData(bubbly, 0, options.username);
+            getGameData(bubbly, 0, options);
         },
 
         unload: function () {
@@ -22,14 +22,15 @@
             // TODO: Respond to changes in layout.
         }
     });
+    var localSettings = Windows.Storage.ApplicationData.current.localSettings;
 
-    function getGameData(bubbly, time, username) {
+    function getGameData(bubbly, time, options) {
         if (time == null)
             time = 0;
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
-                url: "http://localhost:8081/bubbly/join/" + username,
+                url: "http://localhost:8081/bubbly/join",
                 responseType: "json",
                 headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
             }).done(
@@ -38,8 +39,9 @@
                         var data = JSON.parse(result.response);
                         var gameState = data.gameState;
                         var user = data.user;
-                        setGameClock(gameState.remainingTime, bubbly);
+                        setGameClock(gameState.remainingTime, bubbly, options);
                         bubbly.newGame(gameState.board);
+                        localSettings["userId"] = gameState.userCount;
                         writeDebug(gameState);
                     }
                 },
@@ -78,7 +80,7 @@
 
     var clock;
     var counter = 1;
-    function setGameClock(remainingTime, bubbly) {
+    function setGameClock(remainingTime, bubbly, options) {
         if (remainingTime < 0)
             remainingTime = 0;
 
@@ -93,7 +95,7 @@
 
         setTimeout(function () {
             console.log("time out, game ended, send score");
-            getGameData(bubbly, 5000);
+            getGameData(bubbly, 5000, options);
             clearInterval(clock);
             clock = null;
             counter = 1;
