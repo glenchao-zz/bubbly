@@ -25,12 +25,12 @@
         }
     });
     var localSettings = Windows.Storage.ApplicationData.current.localSettings;
-    
+    var url = "http://node-express-env-3iecs28p3q.elasticbeanstalk.com"; //http://localhost:8081
     function getGameData(bubbly, time) {
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
-                url: "http://localhost:8081/bubbly/join",
+                url: url + "/bubbly/join",
                 responseType: "json",
                 headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
             }).done(
@@ -51,7 +51,8 @@
                         writeDebug(data);
                     }
                 },
-                function error(gameStatus) { }
+                function error(gameStatus) {
+                }
             );
         }, time);
     }
@@ -61,7 +62,7 @@
             bubbly.endGame();
             WinJS.xhr({
                 type: "POST",
-                url: "http://localhost:8081/bubbly/report/" + localSettings.values["userId"],
+                url: url + "/bubbly/report/" + localSettings.values["userId"],
                 responseType: "json",
                 headers: {
                     "Content-type": "application/json",
@@ -80,7 +81,8 @@
                             getGameSummary(bubbly, data.gameStatus.remainingTime);
                         }
                     },
-                    function error(result) { }
+                    function error(result) {
+                    }
              );
         }, time);
     }
@@ -89,7 +91,7 @@
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
-                url: "http://localhost:8081/bubbly/summary",
+                url: url + "/bubbly/summary",
                 responseType: "json",
                 headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
             }).done(
@@ -101,7 +103,8 @@
                         getGameData(bubbly, data.gameStatus.remainingTime);
                     }
                 },
-                function error(result) { }
+                function error(result) {
+                }
             );
         }, time);
     }
