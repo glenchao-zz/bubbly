@@ -12,15 +12,17 @@ function Bubbly() {
     // Public variables
     this.moves; // array
     this.score = 0;
+    this.boardModule = document.createElement("canvas");
+    this.scoreModule = document.createElement("div");
 
     // Private variables
     var board; //main board of the game 
     var playing; //boolean
     var selectedBubbles// array
-    var canvas = document.getElementById("myCanvas");
-    var ctx = canvas.getContext("2d");
-    canvas.width = CANVASWIDTH;
-    canvas.height = CANVASHEIGHT;
+    var ctx = this.boardModule.getContext("2d");
+    this.boardModule.addEventListener("click", selectBubbles, false);
+    this.boardModule.width = CANVASWIDTH;
+    this.boardModule.height = CANVASHEIGHT;
 
     // Starts a new game by defining canvas width and height. End the previous game first and initialize the board.
     this.newGame = function (boardArray) {
@@ -38,7 +40,7 @@ function Bubbly() {
     //has clicked and figure out if the neighbouring colors are the same
     //by calling findNieghbour(...); If the bubbles have already been 
     //selected previously, remove the bubbles and update the total score
-    this.selectBubbles = function (event) {
+    function selectBubbles(event) {
         if (board == null || !playing)
             return;
         // refreshes the board
@@ -64,17 +66,17 @@ function Bubbly() {
             }
         }
         else if (included(selectedBubbles, x, y)) {
-            // Clears the bubbles
+            // Clears the bubbles and update score
             for (var i = 0; i < selectedBubbles.length; i++) {
                 x = selectedBubbles[i].x;
                 y = selectedBubbles[i].y;
                 board[x][y] = "white";
             }
-            _this.score += Math.pow(selectedBubbles.length, 2);
             _this.moves.push(selectedBubbles);
-            selectedBubbles = new Array();
             reorganizeBoard();
             checkGameState();
+            updateScore();
+            selectedBubbles = new Array(); // clear
         }
         else {
             // Selected another set of bubbles
@@ -205,6 +207,10 @@ function Bubbly() {
         drawBoard();
     }
 
+    function updateScore() {
+        _this.score += Math.pow(selectedBubbles.length, 2);
+    }
+
     /*
       input: array containing cordinates of bubbles, 
              player selected bubble cordinates (x,y)
@@ -314,8 +320,8 @@ function Bubbly() {
             y = event.clientY + document.body.scrollTop + document.documentElement.scrollTop;
         }
 
-        x -= canvas.offsetLeft;
-        y -= canvas.offsetTop;
+        x -= _this.boardModule.offsetLeft;
+        y -= _this.boardModule.offsetTop;
 
         x = parseInt(x / (DIAMETER));
         y = parseInt(y / (DIAMETER));

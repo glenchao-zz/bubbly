@@ -15,15 +15,16 @@
 
     var validationTimer;
     var bValidated = false;
+    var validationTime = 300;
     function validateUsername(evt) {
         evt.preventDefault();
         bValidated = false;
         if (validationTimer) {
             clearTimeout(validationTimer);
-            validationTimer = setTimeout(validate, 1000, evt);
+            validationTimer = setTimeout(validate, validationTime, evt);
         }
         else
-            validationTimer = setTimeout(validate, 1000, evt);
+            validationTimer = setTimeout(validate, validationTime, evt);
         
         function validate(evt) {
             var warningDiv = document.querySelector("#usernameForm .warning");
@@ -52,7 +53,7 @@
             var doubleCheck = !(/\W/g).test(username) && username.length > 0 && username.length < 21;
             if (doubleCheck) {
                 localSettings["username"] = username;
-                //var hardwareToken = Windows.System.Profile.HardwareIdentification.getPackageSpecificToken(null);
+                var hardwareToken = Windows.System.Profile.HardwareIdentification.getPackageSpecificToken(null);
                 WinJS.Navigation.navigate("/pages/game.html", { username: username, token: hardwareToken });
             }
             else {

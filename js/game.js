@@ -6,10 +6,12 @@
         // populates the page elements with the app's data.
         ready: function (element, options) {
             var bubbly = new Bubbly();
-            WinJS.Utilities.query("#myCanvas").listen("click", bubbly.selectBubbles, false);
-            WinJS.Utilities.query("#refreshBtn").listen("click", function () { getGameData(bubbly, 0, options); }, false);
+            var gameBoard = document.getElementById("gameBoard");
+            var gameSCore = document.getElementById("gameScore");
+            gameBoard.appendChild(bubbly.boardModule);
+            gameBoard.appendChild(bubbly.scoreModule);
 
-            getGameData(bubbly, 0, options);
+            getGameData(bubbly, 0);
         },
 
         unload: function () {
@@ -23,10 +25,8 @@
         }
     });
     var localSettings = Windows.Storage.ApplicationData.current.localSettings;
-
-    function getGameData(bubbly, time, options) {
-        if (time == null)
-            time = 0;
+    
+    function getGameData(bubbly, time) {
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
@@ -37,78 +37,110 @@
                 function completed(result) {
                     if (result.status === 200) {
                         var data = JSON.parse(result.response);
-                        var gameState = data.gameState;
+                        var gameStatus = data.gameStatus;
                         var user = data.user;
-                        setGameClock(gameState.remainingTime, bubbly, options);
-                        bubbly.newGame(gameState.board);
-                        localSettings["userId"] = gameState.userCount;
-                        writeDebug(gameState);
+                        setGameClock(gameStatus.remainingTime);
+                        localSettings.values["userId"] = gameStatus.userCount;
+                        bubbly.newGame(gameStatus.board);
+                        if (gameStatus.gameState == 1) // playing
+                            postGameData(bubbly, gameStatus.remainingTime);
+                        else if (gameStatus.gameState == 2) // calculating 
+                            postGameData(bubbly, 0);
+                        else // resting
+                            getGameSummary(bubbly, gameStatus.remainingTime);
+                        writeDebug(data);
                     }
                 },
-                function error(result) {
-
-                }
+                function error(gameStatus) { }
             );
         }, time);
     }
 
     function postGameData(bubbly, time) {
-        WinJS.xhr({
-            type: "POST",
-            url: "http://localhost:8081/bubbly/report",
-            responseType: "json",
-            headers: {
-                "Content-type": "application/json",
-                "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT"
-            },
-            data: JSON.stringify({
-                score: bubbly.score,
-                moves: bubbly.moves
-            })
-        }).done(
+        setTimeout(function () {
+            bubbly.endGame();
+            WinJS.xhr({
+                type: "POST",
+                url: "http://localhost:8081/bubbly/report/" + localSettings.values["userId"],
+                responseType: "json",
+                headers: {
+                    "Content-type": "application/json",
+                    "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT"
+                },
+                data: JSON.stringify({
+                    score: bubbly.score,
+                    moves: bubbly.moves
+                })
+            }).done(
+                    function completed(result) {
+                        if (result.status === 200) {
+                            var data = JSON.parse(result.response);
+                            writeDebug(data);
+                            setGameClock(data.gameStatus.remainingTime);
+                            getGameSummary(bubbly, data.gameStatus.remainingTime);
+                        }
+                    },
+                    function error(result) { }
+             );
+        }, time);
+    }
+
+    function getGameSummary(bubbly, time) {
+        setTimeout(function () {
+            WinJS.xhr({
+                type: "GET",
+                url: "http://localhost:8081/bubbly/summary",
+                responseType: "json",
+                headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
+            }).done(
                 function completed(result) {
                     if (result.status === 200) {
                         var data = JSON.parse(result.response);
                         writeDebug(data);
+                        setGameClock(data.gameStatus.remainingTime);
+                        getGameData(bubbly, data.gameStatus.remainingTime);
                     }
                 },
-                function error(result) {
-
-                }
+                function error(result) { }
             );
+        }, time);
     }
 
     var clock;
     var counter = 1;
-    function setGameClock(remainingTime, bubbly, options) {
+    function setGameClock(remainingTime) {
         if (remainingTime < 0)
             remainingTime = 0;
 
-        remainingTime = Math.ceil(remainingTime / 1000) * 1000;
-
         if (clock == null) {
             clock = setInterval(function () {
-                writeDebug({ remainingTime: (remainingTime / 1000 - counter) + " seconds left" });
+                document.getElementById("clock").textContent = (remainingTime / 1000 - counter) + " seconds left";
                 counter++;
             }, 1000)
         }
 
+        // end game, reset clock
         setTimeout(function () {
-            console.log("time out, game ended, send score");
-            getGameData(bubbly, 5000, options);
             clearInterval(clock);
             clock = null;
             counter = 1;
-            bubbly.endGame();
-            postGameData(bubbly, 0);
         }, remainingTime);
     }
 
-    function writeDebug(data) {
-        var message = "Remaining Time: " + data.remainingTime +
-                      "\nMessage: " + data.message +
-                      "\nBoard Id: " + data.boardId;
-        document.getElementById("gameData").innerText = message;
-        //console.log(message);
+    function writeDebug(obj) {
+        var str = [];
+        getDebugMessage(obj, str);
+        document.getElementById("gameData").innerText = str.join("\n");
+    }
+
+    function getDebugMessage(obj, str) {
+        for (var key in obj) {
+            if (typeof (obj[key]) == 'object') {
+                str.push(key.toUpperCase());
+                getDebugMessage(obj[key], str);
+            } else {
+                str.push(key.toUpperCase() + " --- " + obj[key]);
+            }
+        }
     }
 })();
