@@ -7,9 +7,9 @@
         ready: function (element, options) {
             var bubbly = new Bubbly();
             var gameBoard = document.getElementById("gameBoard");
-            var gameSCore = document.getElementById("gameScore");
+            var gameScore = document.getElementById("gameScore");
             gameBoard.appendChild(bubbly.boardModule);
-            gameBoard.appendChild(bubbly.scoreModule);
+            gameScore.appendChild(bubbly.scoreModule);
 
             getGameData(bubbly, 0);
         },
@@ -19,8 +19,6 @@
         },
 
         updateLayout: function (element) {
-            /// <param name="element" domElement="true" />
-
             // TODO: Respond to changes in layout.
         }
     });
@@ -30,7 +28,7 @@
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
-                url: url + "/bubbly/join",
+                url: url + "/bubbly/join/",
                 responseType: "json",
                 headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
             }).done(
@@ -41,9 +39,11 @@
                         var user = data.user;
                         setGameClock(gameStatus.remainingTime);
                         localSettings.values["userId"] = gameStatus.userCount;
-                        bubbly.newGame(gameStatus.board);
-                        if (gameStatus.gameState == 1) // playing
+
+                        if (gameStatus.gameState == 1) { // playing
+                            bubbly.newGame(gameStatus.board);
                             postGameData(bubbly, gameStatus.remainingTime);
+                        }
                         else if (gameStatus.gameState == 2) // calculating 
                             postGameData(bubbly, 0);
                         else // resting
@@ -91,7 +91,7 @@
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
-                url: url + "/bubbly/summary",
+                url: url + "/bubbly/summary/",
                 responseType: "json",
                 headers: { "If-Modified-Since": "Mon, 27 Mar 1972 00:00:00 GMT" },
             }).done(
@@ -101,6 +101,8 @@
                         writeDebug(data);
                         setGameClock(data.gameStatus.remainingTime);
                         getGameData(bubbly, data.gameStatus.remainingTime);
+                        if (data.summary != null)
+                            bubbly.replay(data.summary.bestMoves);
                     }
                 },
                 function error(result) {
@@ -117,8 +119,7 @@
 
         if (clock == null) {
             clock = setInterval(function () {
-                document.getElementById("clock").textContent = (remainingTime / 1000 - counter) + " seconds left";
-                counter++;
+                document.getElementById("clock").textContent = (remainingTime / 1000 - counter++) + " seconds left";
             }, 1000)
         }
 
@@ -127,6 +128,7 @@
             clearInterval(clock);
             clock = null;
             counter = 1;
+            document.getElementById("clock").textContent = 0;
         }, remainingTime);
     }
 

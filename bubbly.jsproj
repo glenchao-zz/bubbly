@@ -70,6 +70,7 @@
     <Content Include="js\bubbly.js" />
     <Content Include="js\default.js" />
     <Content Include="js\game.js" />
+    <Content Include="js\helper.js" />
     <Content Include="js\home.js" />
     <Content Include="js\navigator.js" />
     <None Include="Package.StoreAssociation.xml">

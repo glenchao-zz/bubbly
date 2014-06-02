@@ -1,38 +1,47 @@
 function Bubbly() {
     var _this = this;
 
+    // Private variables
+    var board; //main board of the game 
+    var backupBoard;
+    var replayTimer;
+    var bPlaying = false; //boolean
+    var bReplayMode = false; //boolean
+    var selectedBubbles// array
+
     // Constant variables
     var COLUMNS = 15; //number of columns of the board
     var ROWS = 8; // number of rows of the board
-    var RADIUS = 25; //how big the bubbles are 
-    var DIAMETER = RADIUS * 2;
-    var CANVASWIDTH = COLUMNS * DIAMETER; //width of the canvas
-    var CANVASHEIGHT = ROWS * DIAMETER; //height of the canvas
+    var radius = 25; //how big the bubbles are 
+    var diameter = radius * 2;
+    var canvasWidth = COLUMNS * diameter; //width of the canvas
+    var canvasHeight = ROWS * diameter; //height of the canvas
 
     // Public variables
-    this.moves; // array
+    this.moves = new Array(); // array
     this.score = 0;
     this.boardModule = document.createElement("canvas");
     this.scoreModule = document.createElement("div");
 
-    // Private variables
-    var board; //main board of the game 
-    var playing; //boolean
-    var selectedBubbles// array
-    var ctx = this.boardModule.getContext("2d");
     this.boardModule.addEventListener("click", selectBubbles, false);
-    this.boardModule.width = CANVASWIDTH;
-    this.boardModule.height = CANVASHEIGHT;
+    this.boardModule.width = canvasWidth;
+    this.boardModule.height = canvasHeight;
+
+    var boardCtx = this.boardModule.getContext("2d");
 
     // Starts a new game by defining canvas width and height. End the previous game first and initialize the board.
     this.newGame = function (boardArray) {
         // reset game variables
-        playing = true;
+        bPlaying = true;
+        bReplayMode = false;
         selectedBubbles = new Array();
+        clearInterval(replayTimer);
+        replayTimer = null;
         _this.moves = new Array();
         _this.score = 0;
 
         initBoard(boardArray);
+        resizeBoard(1);
         drawBoard();
     };
 
@@ -41,7 +50,7 @@ function Bubbly() {
     //by calling findNieghbour(...); If the bubbles have already been 
     //selected previously, remove the bubbles and update the total score
     function selectBubbles(event) {
-        if (board == null || !playing)
+        if (board == null || !bPlaying || bReplayMode)
             return;
         // refreshes the board
         drawBoard();
@@ -67,15 +76,11 @@ function Bubbly() {
         }
         else if (included(selectedBubbles, x, y)) {
             // Clears the bubbles and update score
-            for (var i = 0; i < selectedBubbles.length; i++) {
-                x = selectedBubbles[i].x;
-                y = selectedBubbles[i].y;
-                board[x][y] = "white";
-            }
             _this.moves.push(selectedBubbles);
+            clearBubbles(selectedBubbles);
             reorganizeBoard();
             checkGameState();
-            updateScore();
+            updateScore(selectedBubbles);
             selectedBubbles = new Array(); // clear
         }
         else {
@@ -85,36 +90,47 @@ function Bubbly() {
         }
     };
 
+    function clearBubbles(bubblesToClear) {
+        for (var i = 0; i < bubblesToClear.length; i++) {
+            x = bubblesToClear[i].x;
+            y = bubblesToClear[i].y;
+            board[x][y] = "white";
+        }
+    }
+
     // Ends the game
     this.endGame = function () {
-        playing = false;
+        bPlaying = false;
 
         // draw end game info
-        ctx.shadowColor = "white";
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = "black";
-        ctx.font = "30px Helvetica";
+        boardCtx.shadowColor = "white";
+        boardCtx.shadowBlur = 20;
+        boardCtx.fillStyle = "black";
+        boardCtx.font = "30px Helvetica";
         var text = "GAME OVER";
-        var textWidth = ctx.measureText(text).width;
-        ctx.fillText(text, CANVASWIDTH / 2 - textWidth / 2, CANVASHEIGHT / 2);
+        var textWidth = boardCtx.measureText(text).width;
+        boardCtx.fillText(text, canvasWidth / 2 - textWidth / 2, canvasHeight / 2);
     }
 
     // Populate the board with random colors. Overwrites any existing data.
     function initBoard(boardArray) {
         board = new Array(COLUMNS);
-        for (var x = 0; x < COLUMNS; x++)
+        for (var x = 0; x < COLUMNS; x++) {
             board[x] = new Array(ROWS);
+        }
         if (Boolean(boardArray)) {
             for (var x = 0; x < COLUMNS; x++)
-                for (var y = 0; y < ROWS; y++)
+                for (var y = 0; y < ROWS; y++) {
                     board[x][y] = boardArray[y + x * ROWS];
+                }
         }
+        backupBoard = board.clone();
     }
 
     // Draws the board defined by board[][]
     function drawBoard() {
         // clear board
-        ctx.clearRect(0, 0, CANVASWIDTH, CANVASHEIGHT);
+        boardCtx.clearRect(0, 0, canvasWidth, canvasHeight);
 
         // draw the bubbles
         for (var x = 0; x < COLUMNS; x++) {
@@ -123,17 +139,27 @@ function Bubbly() {
                 if (color == "white")
                     continue;
 
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(x * DIAMETER + RADIUS, y * DIAMETER + RADIUS, RADIUS, 0 * Math.PI, 2 * Math.PI);
-                ctx.closePath();
-                ctx.fill();
+                boardCtx.shadowColor = color;
+                boardCtx.shadowBlur = 0;
+                boardCtx.fillStyle = color;
+                boardCtx.beginPath();
+                boardCtx.arc(x * diameter + radius, y * diameter + radius, radius, 0 * Math.PI, 2 * Math.PI);
+                boardCtx.closePath();
+                boardCtx.fill();
             }
         }
     }
 
+    function resizeBoard(scale) {
+        if (scale != null) {
+            radius = 25 * scale; //how big the bubbles are 
+            diameter = radius * 2;
+            canvasWidth = COLUMNS * diameter; //width of the canvas
+            canvasHeight = ROWS * diameter; //height of the canvas
+            _this.boardModule.width = canvasWidth;
+            _this.boardModule.height = canvasHeight;
+        }
+    }
     // Scans the board to check if there's at least two bubbles 
     // that have the same color and are adjacent to each other
     function checkGameState() {
@@ -144,20 +170,20 @@ function Bubbly() {
                     continue;
                 //up
                 if (y - 1 >= 0 && me == board[x][y - 1])
-                    return (playing = true);
+                    return (bPlaying = true);
                 //right
                 if (x + 1 < COLUMNS && me == board[x + 1][y])
-                    return (playing = true);
+                    return (bPlaying = true);
                 //down
                 if (y + 1 < ROWS && me == board[x][y + 1])
-                    return (playing = true);
+                    return (bPlaying = true);
                 //left
                 if (x - 1 >= 0 && me == board[x - 1][y])
-                    return (playing = true);
+                    return (bPlaying = true);
             }
         }
         _this.endGame();
-        return (playing = false);
+        return (bPlaying = false);
     }
 
     // Called moveColumLeft(),  gravity(), and drawBoard to
@@ -207,8 +233,9 @@ function Bubbly() {
         drawBoard();
     }
 
-    function updateScore() {
-        _this.score += Math.pow(selectedBubbles.length, 2);
+    function updateScore(bubblesToClear) {
+        _this.score += Math.pow(bubblesToClear.length, 2);
+        gameScore.textContent = "Score: " + _this.score;
     }
 
     /*
@@ -233,10 +260,10 @@ function Bubbly() {
             if ((y - 1 >= 0) && color == board[x][y - 1])
                 findNeighbours(array, x, y - 1);
             else {
-                drawBorder(x * DIAMETER,
-                           y * DIAMETER,
-                           x * DIAMETER + DIAMETER,
-                           y * DIAMETER);
+                drawBorder(x * diameter,
+                           y * diameter,
+                           x * diameter + diameter,
+                           y * diameter);
             }
         }
         //right
@@ -244,10 +271,10 @@ function Bubbly() {
             if ((x + 1 < COLUMNS) && color == board[x + 1][y])
                 findNeighbours(array, x + 1, y);
             else {
-                drawBorder(x * DIAMETER + DIAMETER,
-                           y * DIAMETER,
-                           x * DIAMETER + DIAMETER,
-                           y * DIAMETER + DIAMETER);
+                drawBorder(x * diameter + diameter,
+                           y * diameter,
+                           x * diameter + diameter,
+                           y * diameter + diameter);
             }
         }
         //down
@@ -255,10 +282,10 @@ function Bubbly() {
             if ((y + 1 < ROWS) && color == board[x][y + 1])
                 findNeighbours(array, x, y + 1);
             else {
-                drawBorder(x * DIAMETER,
-                           y * DIAMETER + DIAMETER,
-                           x * DIAMETER + DIAMETER,
-                           y * DIAMETER + DIAMETER);
+                drawBorder(x * diameter,
+                           y * diameter + diameter,
+                           x * diameter + diameter,
+                           y * diameter + diameter);
             }
         }
         //left
@@ -266,21 +293,21 @@ function Bubbly() {
             if ((x - 1 >= 0) && color == board[x - 1][y])
                 findNeighbours(array, x - 1, y);
             else {
-                drawBorder(x * DIAMETER,
-                           y * DIAMETER,
-                           x * DIAMETER,
-                           y * DIAMETER + DIAMETER);
+                drawBorder(x * diameter,
+                           y * diameter,
+                           x * diameter,
+                           y * diameter + diameter);
             }
         }
     }
 
     function drawBorder(startX, startY, endX, endY) {
-        ctx.strokeStyle = "white";
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-        ctx.closePath();
+        boardCtx.strokeStyle = "white";
+        boardCtx.beginPath();
+        boardCtx.moveTo(startX, startY);
+        boardCtx.lineTo(endX, endY);
+        boardCtx.stroke();
+        boardCtx.closePath();
     }
 
     /*
@@ -323,9 +350,39 @@ function Bubbly() {
         x -= _this.boardModule.offsetLeft;
         y -= _this.boardModule.offsetTop;
 
-        x = parseInt(x / (DIAMETER));
-        y = parseInt(y / (DIAMETER));
+        x = parseInt(x / (diameter));
+        y = parseInt(y / (diameter));
 
         return { x: x, y: y };
+    }
+
+    // Replay
+    this.replay = function(moves) {
+        if ((moves == null || moves.length == 0) && _this.moves.length == 0)
+            return;
+        bReplayMode = true;
+        bPlaying = false;
+        _this.score = 0;
+
+        board = backupBoard.clone();
+        resizeBoard(0.5);
+        drawBoard();
+        
+        if (moves == null)
+            moves = _this.moves;
+        var moveCounter = 0;
+        replayTimer = setInterval(function () {
+            if (moveCounter == moves.length) {
+                _this.endGame();
+                clearInterval(replayTimer);
+                replayTimer = null;
+                return;
+            }
+
+            clearBubbles(moves[moveCounter]);
+            reorganizeBoard();
+            updateScore(moves[moveCounter]);
+            moveCounter++;
+        }, 500);
     }
 }
