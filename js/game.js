@@ -1,17 +1,29 @@
 ﻿(function () {
     "use strict";
+    var localSettings = Windows.Storage.ApplicationData.current.localSettings;
+    var url = "http://node-express-env-3iecs28p3q.elasticbeanstalk.com"; //http://localhost:8081
+    var bubbly; // main game board
+    var rBubbly; // replay game board
+    var replayBoard;
 
     WinJS.UI.Pages.define("/pages/game.html", {
         // This function is called whenever a user navigates to this page. It
         // populates the page elements with the app's data.
         ready: function (element, options) {
-            var bubbly = new Bubbly();
+            bubbly = new Bubbly("main");
             var gameBoard = document.getElementById("gameBoard");
             var gameScore = document.getElementById("gameScore");
             gameBoard.appendChild(bubbly.boardModule);
             gameScore.appendChild(bubbly.scoreModule);
 
-            getGameData(bubbly, 0);
+            rBubbly = new Bubbly("replay");
+            replayBoard = document.getElementById("replayBoard");
+            var rGameBoard = document.getElementById("rGameBoard");
+            var rGameScore = document.getElementById("rGameScore");
+            rGameBoard.appendChild(rBubbly.boardModule);
+            rGameScore.appendChild(rBubbly.scoreModule);
+
+            getGameData(0);
         },
 
         unload: function () {
@@ -22,9 +34,10 @@
             // TODO: Respond to changes in layout.
         }
     });
-    var localSettings = Windows.Storage.ApplicationData.current.localSettings;
-    var url = "http://node-express-env-3iecs28p3q.elasticbeanstalk.com"; //http://localhost:8081
-    function getGameData(bubbly, time) {
+    
+    function getGameData(time) {
+        if (bubbly == null)
+            return;
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
@@ -42,12 +55,13 @@
 
                         if (gameStatus.gameState == 1) { // playing
                             bubbly.newGame(gameStatus.board);
-                            postGameData(bubbly, gameStatus.remainingTime);
+                            rBubbly.newGame(gameStatus.board);
+                            postGameData(gameStatus.remainingTime);
                         }
                         else if (gameStatus.gameState == 2) // calculating 
-                            postGameData(bubbly, 0);
+                            postGameData(0);
                         else // resting
-                            getGameSummary(bubbly, gameStatus.remainingTime);
+                            getGameSummary(gameStatus.remainingTime);
                         writeDebug(data);
                     }
                 },
@@ -57,7 +71,9 @@
         }, time);
     }
 
-    function postGameData(bubbly, time) {
+    function postGameData(time) {
+        if (bubbly == null)
+            return;
         setTimeout(function () {
             bubbly.endGame();
             WinJS.xhr({
@@ -78,7 +94,7 @@
                             var data = JSON.parse(result.response);
                             writeDebug(data);
                             setGameClock(data.gameStatus.remainingTime);
-                            getGameSummary(bubbly, data.gameStatus.remainingTime);
+                            getGameSummary(data.gameStatus.remainingTime);
                         }
                     },
                     function error(result) {
@@ -87,7 +103,9 @@
         }, time);
     }
 
-    function getGameSummary(bubbly, time) {
+    function getGameSummary(time) {
+        if (bubbly == null)
+            return;
         setTimeout(function () {
             WinJS.xhr({
                 type: "GET",
@@ -100,9 +118,11 @@
                         var data = JSON.parse(result.response);
                         writeDebug(data);
                         setGameClock(data.gameStatus.remainingTime);
-                        getGameData(bubbly, data.gameStatus.remainingTime);
-                        if (data.summary != null)
-                            bubbly.replay(data.summary.bestMoves);
+                        getGameData(data.gameStatus.remainingTime);
+                        bubbly.replay();
+                        if (data.summary != null) {
+                            rBubbly.replay(data.summary.bestMoves);
+                        }
                     }
                 },
                 function error(result) {

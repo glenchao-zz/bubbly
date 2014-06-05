@@ -1,4 +1,4 @@
-function Bubbly() {
+function Bubbly(name) {
     var _this = this;
 
     // Private variables
@@ -21,7 +21,9 @@ function Bubbly() {
     this.moves = new Array(); // array
     this.score = 0;
     this.boardModule = document.createElement("canvas");
+    this.boardModule.id = name + "_canvas";
     this.scoreModule = document.createElement("div");
+    this.scoreModule.id = name + "_score";
 
     this.boardModule.addEventListener("click", selectBubbles, false);
     this.boardModule.width = canvasWidth;
@@ -50,6 +52,7 @@ function Bubbly() {
     //by calling findNieghbour(...); If the bubbles have already been 
     //selected previously, remove the bubbles and update the total score
     function selectBubbles(event) {
+        console.log(name + " tried to select bubble");
         if (board == null || !bPlaying || bReplayMode)
             return;
         // refreshes the board
@@ -65,6 +68,7 @@ function Bubbly() {
         }
 
         if (selectedBubbles.length < 2) {
+            console.log(name + "  selected bubbles");
             // First selection
             selectedBubbles = new Array();
             findNeighbours(selectedBubbles, x, y); //recursive call

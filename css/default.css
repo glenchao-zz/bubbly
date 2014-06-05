@@ -12,8 +12,8 @@
 
 .fragment {
     /* Define a grid with rows for a banner and a body */
-    -ms-grid-columns: 1fr 1024px 1fr;
-    -ms-grid-rows: 1fr 120px 600px 1fr;
+    -ms-grid-columns: 50px 1fr 50px;
+    -ms-grid-rows: 50px 120px 1fr 50px;
     display: -ms-grid;
     height: 100%;
     width: 100%;
@@ -33,16 +33,9 @@
     .fragment section[role=main] {
         -ms-grid-column: 2;
         -ms-grid-row: 3;
-        -ms-grid-columns: 1fr 750px 1fr;
-        -ms-grid-rows: 1fr;
-        display: -ms-grid;
         height: 100%;
         width: 100%;
     }
-
-        .fragment section[role=main] #container {
-            -ms-grid-column: 2;
-        }
 
 .warning {
     color: red;

@@ -1,6 +1,26 @@
-﻿#myCanvas {
-    margin-left: auto;
-    margin-right: auto; 
-    width: 750px;
-    height: 400px;
+﻿#container {
+    -ms-grid-rows: 1fr 1fr;
+    -ms-grid-columns: 1fr 1fr;
+    display: -ms-grid;
 }
+
+    #mainBoard {
+        -ms-grid-column: 1;
+        -ms-grid-row: 1;
+        border: 1px solid white;
+    }
+
+    #replayBoard {
+        -ms-grid-column: 2;
+        -ms-grid-row: 1;
+        border: 1px solid white;
+    }
+
+    #gameStatus {
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 2;
+        -ms-grid-row: 2;
+        width: 100%;
+        height: 150px;
+        overflow: scroll;
+    }
